@@ -66,24 +66,6 @@ pantheon_session = configure_file(
   install_dir: join_paths(datadir, 'gnome-session', 'sessions')
 )
 
-if get_option('wayland')
-    wayland_session_components = [
-      'gala-wayland',
-      'gala-daemon',
-      gsd_components
-    ]
-
-    wayland_session_configuration = configuration_data()
-    wayland_session_configuration.set('SESSION_COMPONENTS', ';'.join(wayland_session_components))
-
-    configure_file(
-      input: 'pantheon-wayland.session.in',
-      output: '@BASENAME@',
-      configuration: wayland_session_configuration,
-      install_dir: datadir / 'gnome-session' / 'sessions'
-    )
-endif
-
 autostartdir = join_paths(get_option('sysconfdir'), 'xdg', 'autostart')
 
 gsd_dir = gsd_dep.get_pkgconfig_variable('prefix')
@@ -116,31 +98,43 @@ foreach component : gsd_components
   )
 endforeach
 
-gnome_keyring = find_program('gnome-keyring-daemon')
-onboard = find_program('onboard')
-orca = find_program('orca')
-
 if get_option('detect-program-prefixes') == true
   # TODO: use fs module in meson 0.53.0
+  gnome_keyring = find_program('gnome-keyring-daemon')
+
   gnome_keyring_prefix = gnome_keyring.path().split('/bin')[0]
-  onboard_prefix = onboard.path().split('/bin')[0]
-  orca_prefix = orca.path().split('/bin')[0]
 
   autostarts = {
     'gnome-keyring-pkcs11': join_paths(gnome_keyring_prefix, 'etc/xdg/autostart', 'gnome-keyring-pkcs11.desktop'),
     'gnome-keyring-secrets': join_paths(gnome_keyring_prefix, 'etc/xdg/autostart', 'gnome-keyring-secrets.desktop'),
     'gnome-keyring-ssh': join_paths(gnome_keyring_prefix, 'etc/xdg/autostart', 'gnome-keyring-ssh.desktop'),
-    'onboard-autostart': join_paths(onboard_prefix, 'etc/xdg/autostart', 'onboard-autostart.desktop'),
-    'orca-autostart': join_paths(orca_prefix, 'etc/xdg/autostart', 'orca-autostart.desktop'),
   }
+  if get_option('accessibility')
+    orca = find_program('orca')
+
+    orca_prefix = orca.path().split('/bin')[0]
+
+    autostarts = {
+      'gnome-keyring-pkcs11': join_paths(gnome_keyring_prefix, 'etc/xdg/autostart', 'gnome-keyring-pkcs11.desktop'),
+      'gnome-keyring-secrets': join_paths(gnome_keyring_prefix, 'etc/xdg/autostart', 'gnome-keyring-secrets.desktop'),
+      'gnome-keyring-ssh': join_paths(gnome_keyring_prefix, 'etc/xdg/autostart', 'gnome-keyring-ssh.desktop'),
+      'orca-autostart': join_paths(orca_prefix, 'etc/xdg/autostart', 'orca-autostart.desktop')
+    }
+  endif
 else
   autostarts = {
     'gnome-keyring-pkcs11': join_paths(autostartdir, 'gnome-keyring-pkcs11.desktop'),
     'gnome-keyring-secrets': join_paths(autostartdir, 'gnome-keyring-secrets.desktop'),
     'gnome-keyring-ssh': join_paths(autostartdir, 'gnome-keyring-ssh.desktop'),
-    'onboard-autostart': join_paths(autostartdir, 'onboard-autostart.desktop'),
-    'orca-autostart': join_paths(autostartdir, 'orca-autostart.desktop'),
   }
+  if get_option('accessibility')
+    autostarts = {
+      'gnome-keyring-pkcs11': join_paths(autostartdir, 'gnome-keyring-pkcs11.desktop'),
+      'gnome-keyring-secrets': join_paths(autostartdir, 'gnome-keyring-secrets.desktop'),
+      'gnome-keyring-ssh': join_paths(autostartdir, 'gnome-keyring-ssh.desktop'),
+      'orca-autostart': join_paths(autostartdir, 'orca-autostart.desktop')
+    }
+  endif
 endif
 
 foreach name, autostart : autostarts
