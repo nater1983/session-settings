@@ -33,6 +33,7 @@ if get_option('mimeapps-list')
     subdir('applications')
 endif
 
+subdir('plugins')
 subdir('session')
 
 if get_option('x11')
