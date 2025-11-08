@@ -1,51 +1,35 @@
 # plugins/meson.build
-# Generate GNOME Settings Daemon plugin autostart desktop files for Slackware
+# Generate GNOME Settings Daemon plugin autostart desktop files dynamically
 
-# List all GNOME Settings Daemon plugin components
-gsd_plugins = [
-  'A11ySettings',
-  'Color',
-  'Datetime',
-  'Housekeeping',
-  'Keyboard',
-  'MediaKeys',
-  'Power',
-  'PrintNotifications',
-  'Rfkill',
-  'ScreensaverProxy',
-  'Sharing',
-  'Smartcard',
-  'Sound',
-  'UsbProtection',
-  'Wwan',
-  'XSettings',
-]
+# Ensure gsd_components is available from the parent scope
+# (declared in the top-level meson.build)
+assert(defined('gsd_components'), 'gsd_components must be defined in the parent Meson file.')
 
-# Install directory for autostart files
+# Install directory for autostart entries
 autostart_dir = join_paths(get_option('sysconfdir'), 'xdg', 'autostart')
 
-# For each plugin, generate a .desktop file using configure_file()
-foreach plugin : gsd_plugins
+# Generate a .desktop file for each GNOME Settings Daemon component
+foreach component : gsd_components
+  # Extract only the plugin name (the part after the last dot)
+  plugin_name = component.split('.')[-1]
   desktop_in = 'org.gnome.SettingsDaemon.Real.desktop.in'
-  desktop_out = 'org.gnome.SettingsDaemon.@0@.desktop'.format(plugin)
+  desktop_out = 'org.gnome.SettingsDaemon.@0@.desktop'.format(plugin_name)
 
-  # Configure substitutions
   configure_file(
     input: desktop_in,
     output: desktop_out,
     configuration: {
-      'pluginname': plugin,
-      'description': 'GNOME Settings Daemon {} plugin'.format(plugin),
+      'pluginname': plugin_name,
+      'description': 'GNOME Settings Daemon {} plugin'.format(plugin_name),
       'libexecdir': join_paths(get_option('prefix'), get_option('libexecdir')),
-      # Slackware does not use systemd, so we set this to false
-      'systemd_hidden': 'false',
+      'systemd_hidden': 'false',  # Slackware-friendly, no systemd
     },
     install: true,
     install_dir: autostart_dir,
   )
 endforeach
 
-# Also install a dummy desktop file for completeness
+# Also install a dummy placeholder autostart entry
 configure_file(
   input: 'org.gnome.SettingsDaemon.Dummy.desktop.in',
   output: 'org.gnome.SettingsDaemon.Dummy.desktop',
